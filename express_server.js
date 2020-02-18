@@ -4,14 +4,14 @@ const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs");
 
-function generateRandomString() {
-   var result           = '';
-   var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      for ( var i = 0; i < 7; i++ ) {
-      result += characters.charAt(Math.floor(Math.random() * characters.length));
-   }
-   return result;
-}
+const generateRandomString = function() {
+  let result           = '';
+  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < 6; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+};
 
 
 const urlDatabase = {
@@ -50,7 +50,7 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  let newCode = generateRandomString()
+  let newCode = generateRandomString();
   urlDatabase[newCode] = req.body.longURL;
   res.redirect(`/urls/${newCode}`);
 });
