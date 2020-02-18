@@ -15,11 +15,15 @@
       /* letter-spacing: 3px; */
       border: 1px solid black;
       cursor: pointer;
-      padding: 5px 5px;
+      /* padding: 5px 5px; */
     }
     .removeBtn:hover {
       border: 1px solid red;
       color: red;
+    }
+    .fixa:hover {
+      text-decoration: none;
+      color: darkblue;
     }
     </style>
 </head>
@@ -43,7 +47,7 @@
           <tr>
             <td><%= url %></td>
             <td><a href="<%= urls[url] %>"><%= urls[url] %></a></td>
-            <td><a class="removeBtn" href="/urls/<%= url %>">Edit</a></td>
+            <td><a class="fixa" href="/urls/<%= url %>">Edit</a></td>
             <td>
               <form method="POST" action="/urls/<%= url %>/delete"><button class="removeBtn">REMOVE</button></form>
             </td>
