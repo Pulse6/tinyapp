@@ -1,4 +1,5 @@
 const express = require("express");
+const bcrypt = require('bcrypt');
 let cookieParser = require('cookie-parser');
 const app = express();
 app.use(cookieParser());
@@ -112,8 +113,9 @@ app.post("/register", (req, res) => {
   if (validateEmail(req.body.email) === true || req.body.email === "" || req.body.password === "") {
     res.sendStatus(res.statusCode = 400);
   }
+  let hashPassword = bcrypt.hashSync(req.body.password, 10)
   let id = generateRandomString();
-  users[id] = {id: id, email: req.body.email, password: req.body.password};
+  users[id] = {id: id, email: req.body.email, password: hashPassword};
   res.cookie('user_id', id);
   res.redirect("/urls");
 });
@@ -125,8 +127,6 @@ app.get("/login", (req, res) => {
 app.post("/urls", (req, res) => {
   let newCode = generateRandomString();
   urlDatabase[newCode] = { longURL: req.body.longURL, userID: req.cookies.user_id.id };
-  console.log(urlDatabase)
-  // console.log(req.cookies.user_id.id)
   res.redirect(`/urls/${newCode}`);
 });
 
@@ -156,7 +156,7 @@ app.post("/login", (req, res) => {
   const obj = getUser(req.body.email);
   if (validateEmail(req.body.email) === false) {
     res.sendStatus(res.statusCode = 403);
-  } else if (req.body.password !== obj.password) {
+  } else if (bcrypt.compareSync(req.body.password, obj.password) === false) {
     res.sendStatus(res.statusCode = 403);
   }
   res.cookie('user_id', obj);
@@ -167,7 +167,6 @@ app.post("/logout", (req, res) => {
   res.clearCookie('user_id', users[req.cookies.user_id]);
   res.redirect('/urls');
 });
-
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
