@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require('bcrypt');
 let cookieParser = require('cookie-parser');
+// let cookieSession = require('cookie-session');
 const app = express();
 app.use(cookieParser());
 app.set("view engine", "ejs");
@@ -62,7 +63,7 @@ app.get("/hello", (req, res) => {
 app.get("/urls", (req, res) => {
   // let fliterURL = urlsForUser(req.cookies.user_id.id)
   if (req.cookies.user_id) {
-    let templateVars = { urls: urlsForUser(req.cookies.user_id.id), user_id: req.cookies["user_id"]};
+    let templateVars = { urls: urlsForUser(req.cookies.user_id.id), user_id: req.cookies.user_id};
     res.render("urls_index", templateVars);
   } else {
     res.redirect('/login');
@@ -116,7 +117,7 @@ app.post("/register", (req, res) => {
   let hashPassword = bcrypt.hashSync(req.body.password, 10)
   let id = generateRandomString();
   users[id] = {id: id, email: req.body.email, password: hashPassword};
-  res.cookie('user_id', id);
+  res.cookie('user_id', users[id]);
   res.redirect("/urls");
 });
 
@@ -159,8 +160,8 @@ app.post("/login", (req, res) => {
   } else if (bcrypt.compareSync(req.body.password, obj.password) === false) {
     res.sendStatus(res.statusCode = 403);
   }
-  res.cookie('user_id', obj);
-  res.redirect('/urls',);
+  res.cookie('user_id', obj.id);
+  res.redirect('/urls');
 });
 
 app.post("/logout", (req, res) => {
