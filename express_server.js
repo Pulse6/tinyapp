@@ -5,6 +5,7 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
+const { getUser } = require("./helper")
 
 app.set("view engine", "ejs");
 app.use(cookieSession({
@@ -43,14 +44,6 @@ const validateEmail = (email) => {/// using email to see if it is in database
   return false;
 };
 
-const getUser = (email) => {/// using email to grab the right object and return it
-  for (let i of Object.keys(users)) {
-    if (users[i].email === email) {
-      return users[i];
-    }
-  }
-  return false;
-};
 ////// Database
 const urlDatabase = {/// database for links and the user's id who made the link
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "userRandomID" },
@@ -147,7 +140,7 @@ app.get("/login", (req, res) => {/// for path /login render urls_login
 });
 
 app.post("/login", (req, res) => {/// action for when user click login button
-  const obj = getUser(req.body.email);/// grabing the obj with email
+  const obj = getUser(req.body.email, users);/// grabing the obj with email
   if (validateEmail(req.body.email) === false) {/// see if email is in database
     res.sendStatus(res.statusCode = 403);/// if not send status code 403
     return
