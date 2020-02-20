@@ -13,7 +13,6 @@
     <% if(user_id){ %>
     <form class="form-inline" action="/Logout" method="POST">
       <div class="form-group mb-2">
-        <!-- <label for="longURL">Enter a URL:</label> -->
         <p style=" margin: 1em"><%= user_id.email %></p>
         <button type="submit" class="btn btn-primary">Logout</button>
       </div>
@@ -21,11 +20,8 @@
     <% } else { %>
     <form class="form-inline" action="/login" method="POST">
       <div class="form-group mb-2">
-        <!-- <label for="longURL">Enter a URL:</label> -->
-        <!-- <input class="form-control" type="text" name="username" placeholder="Username" style="width: 300px; margin: 1em"> -->
         <a style=" margin: 1em" href="/register">Register</a>
         <a style=" margin: 1em" href="/login">Login</a>
-        <!-- <button type="submit" class="btn btn-primary">Login</button> -->
       </div>
     </form>
     <% } %>

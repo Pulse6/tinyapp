@@ -85,8 +85,7 @@ app.get("/hello", (req, res) => {/// display Hello World in path /hello
 
 app.get("/urls", (req, res) => {/// path for displaying user's urls
   if (req.session.user_id) {/// check if user are login if yes use urlsForUser function to filter the urls belongs to user
-    let templateVars = { urls: urlsForUser(req.session.user_id.id), user_id: req.session.user_id};
-    // console.log('user filter obj', templateVars.urls);
+    let templateVars = { urls: urlsForUser(req.session.user_id), user_id: users[req.session.user_id]};
     res.render("urls_index", templateVars);
   } else { /// if user not login move them to login
     res.redirect('/login');
@@ -98,18 +97,18 @@ app.get("/urls/new", (req, res) => {/// path for displaying adding links
     res.redirect("/login");/// if not move them to login page
   }
   let templateVars = {/// putting user id in templateVars obj to pass it to urls_new
-    user_id: req.session.user_id
+    user_id: users[req.session.user_id]
   };
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {///  path for displaying the new link the user just added
   /// if not users give them a 401 statuscode
-  if (req.session.user_id === undefined || req.session.user_id.id !== urlDatabase[req.params.shortURL].userID) {
+  if (req.session.user_id === undefined || req.session.user_id !== urlDatabase[req.params.shortURL].userID) {
     res.sendStatus(res.statusCode = 401);
   }
   /// using templateVars to pass in data for rendering in urls_show
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL , user_id: req.session.user_id};
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL , user_id: users[req.session.user_id]};
   res.render("urls_show", templateVars);
 });
 
@@ -125,42 +124,18 @@ app.post("/register", (req, res) => {
   let hashPassword = bcrypt.hashSync(req.body.password, 10);/// incrypt password
   let id = generateRandomString();/// make a random id for a new user
   users[id] = {id: id, email: req.body.email, password: hashPassword};/// creating user and store it in database
-  req.session.user_id = users[id];/// making a session for user
+  req.session.user_id = id;/// making a session for user
   res.redirect("/urls");/// bring user to path urls
-});
-
-app.get("/login", (req, res) => {/// for path /login render urls_login
-  res.render("urls_login");
 });
 
 app.post("/urls", (req, res) => {/// user adding a new link
   let newCode = generateRandomString();/// random ID ket for link and user's id
-  urlDatabase[newCode] = { longURL: req.body.longURL, userID: req.session.user_id.id };
+  urlDatabase[newCode] = { longURL: req.body.longURL, userID: req.session.user_id };
   res.redirect(`/urls/${newCode}`);/// bring user to /urls with the new link they made
 });
 
-app.get("/u/:shortURL", (req, res) => {/// with the right key in urldatabse will bring user to the longURL storge in that key
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  res.redirect(longURL);
-});
-
-app.post("/urls/:shortURL/delete", (req, res) => {/// action for when user click the delete button on path urls
-  /// check if user are aloud to delete when their id
-  if (req.session.user_id.id !== urlDatabase[req.params.shortURL].userID) {
-    res.sendStatus(res.statusCode = 401);
-  }
-  delete urlDatabase[req.params.shortURL];/// deleting the key in database
-  res.redirect(`/urls`);/// bring user back to path urls
-});
-
-app.post("/urls/:id/update", (req, res) => {/// action for when user click the submit botton at path urls:shorurl
-  /// check if the link belongs to user
-  if (req.session.user_id.id !== urlDatabase[req.params.id].userID) {
-    res.sendStatus(res.statusCode = 401);
-  }
-  let id = req.params.id;
-  urlDatabase[req.params.id].longURL = req.body.update;/// replacing old link with new link
-  res.redirect(`/urls/${id}`);
+app.get("/login", (req, res) => {/// for path /login render urls_login
+  res.render("urls_login");
 });
 
 app.post("/login", (req, res) => {/// action for when user click login button
@@ -177,6 +152,30 @@ app.post("/login", (req, res) => {/// action for when user click login button
 app.post("/logout", (req, res) => {/// action for logout button
   req.session = null;/// set sesstion to null 
   res.redirect('/login');/// bring user to path login
+});
+
+app.post("/urls/:shortURL/delete", (req, res) => {/// action for when user click the delete button on path urls
+  /// check if user are aloud to delete when their id
+  if (req.session.user_id !== urlDatabase[req.params.shortURL].userID) {
+    res.sendStatus(res.statusCode = 401);
+  }
+  delete urlDatabase[req.params.shortURL];/// deleting the key in database
+  res.redirect(`/urls`);/// bring user back to path urls
+});
+
+app.post("/urls/:id/update", (req, res) => {/// action for when user click the submit botton at path urls:shorurl
+  /// check if the link belongs to user
+  if (req.session.user_id !== urlDatabase[req.params.id].userID) {
+    res.sendStatus(res.statusCode = 401);
+  }
+  let id = req.params.id;
+  urlDatabase[req.params.id].longURL = req.body.update;/// replacing old link with new link
+  res.redirect(`/urls/${id}`);
+});
+
+app.get("/u/:shortURL", (req, res) => {/// with the right key in urldatabse will bring user to the longURL storge in that key
+  const longURL = urlDatabase[req.params.shortURL].longURL;
+  res.redirect(longURL);
 });
 
 app.listen(PORT, () => {/// console.log in shell when server is up and going
