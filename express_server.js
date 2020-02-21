@@ -48,23 +48,10 @@ const isShorturlInData = shortURL => {/// check if the shortURL is in database
 };
 
 ////// Database
-const urlDatabase = {/// database for links and the user's id who made the link
-  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "userRandomID" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "userRandomID" }
-};
-
-const users = {/// databse for users info
-  "userRandomID": {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "123"
-  },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "123"
-  }
-};
+/// database for links and the user's id who made the link
+const urlDatabase = {};
+/// databse for users info
+const users = {};
 
 ////////////
 
@@ -74,14 +61,6 @@ app.get("/", (req, res) => {/// see if user are login
   } else {
     res.redirect("/login");// bring user to this path if not login
   }
-});
-
-app.get("/urls.json", (req, res) => {/// use JSON to see what's in urlDatabase
-  res.json(urlDatabase);
-});
-
-app.get("/hello", (req, res) => {/// display Hello World in path /hello
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
 app.get("/urls", (req, res) => {/// path for displaying user's urls
@@ -121,27 +100,12 @@ app.get("/urls/:shortURL", (req, res) => {///  path for displaying the new link 
   res.render("urls_show", templateVars);
 });
 
-app.get("/register", (req, res) => {/// for this path render urls_register
-  let templateVars = {/// putting user id in templateVars obj to pass it to urls_new
-    user_id: users[req.session.user_id]
-  };
-  res.render("urls_register", templateVars);
-});
-
-app.post("/register", (req, res) => {
-  /// cheack if email are already in database and is they are emty or not
-  if (validateEmail(req.body.email) === true) {
-    res.status(401).send('Email is taken');
-    return;
-  } else if (req.body.email === "" || req.body.password === "") {
-    res.status(401).send('Please provide a username and password');
-    return;
+app.get("/u/:shortURL", (req, res) => {/// with the right key in urldatabse will bring user to the longURL storge in that key
+  if (isShorturlInData(req.param.shortURL) === false) {
+    res.status(401).send(`This link doesn't exist`);
   }
-  let hashPassword = bcrypt.hashSync(req.body.password, 10);/// incrypt password
-  let id = generateRandomString();/// make a random id for a new user
-  users[id] = {id: id, email: req.body.email, password: hashPassword};/// creating user and store it in database
-  req.session.user_id = id;/// making a session for user
-  res.redirect("/urls");/// bring user to path urls
+  const longURL = urlDatabase[req.params.shortURL].longURL;
+  res.redirect(longURL);
 });
 
 app.post("/urls", (req, res) => {/// user adding a new link
@@ -152,31 +116,6 @@ app.post("/urls", (req, res) => {/// user adding a new link
   let newCode = generateRandomString();/// random ID ket for link and user's id
   urlDatabase[newCode] = { longURL: req.body.longURL, userID: req.session.user_id };
   res.redirect(`/urls/${newCode}`);/// bring user to /urls with the new link they made
-});
-
-app.get("/login", (req, res) => {/// for path /login render urls_login
-  let templateVars = {/// putting user id in templateVars obj to pass it to urls_new
-    user_id: users[req.session.user_id]
-  };
-  res.render("urls_login", templateVars);
-});
-
-app.post("/login", (req, res) => {/// action for when user click login button
-  const obj = getUser(req.body.email, users);/// grabing the obj with email
-  if (validateEmail(req.body.email) === false) {/// see if email is in database
-    res.status(403).send('invalid email');/// if not send status code 403
-    return;
-  } else if (bcrypt.compareSync(req.body.password, obj.password) === false) {/// see if password matches
-    res.status(403).send('invalid password');/// if not send status code 403
-    return;
-  }
-  req.session.user_id = obj.id;/// making a sesstion
-  res.redirect('/urls');/// bring user to path urls
-});
-
-app.post("/logout", (req, res) => {/// action for logout button
-  req.session = null;/// set sesstion to null
-  res.redirect('/login');/// bring user to path login
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {/// action for when user click the delete button on path urls
@@ -200,12 +139,52 @@ app.post("/urls/:id/update", (req, res) => {/// action for when user click the s
   res.redirect(`/urls/${id}`);
 });
 
-app.get("/u/:shortURL", (req, res) => {/// with the right key in urldatabse will bring user to the longURL storge in that key
-  if (isShorturlInData(req.param.shortURL) === false) {
-    res.status(401).send(`This link doesn't exist`);
+app.get("/login", (req, res) => {/// for path /login render urls_login
+  let templateVars = {/// putting user id in templateVars obj to pass it to urls_new
+    user_id: users[req.session.user_id]
+  };
+  res.render("urls_login", templateVars);
+});
+
+app.get("/register", (req, res) => {/// for this path render urls_register
+  let templateVars = {/// putting user id in templateVars obj to pass it to urls_new
+    user_id: users[req.session.user_id]
+  };
+  res.render("urls_register", templateVars);
+});
+
+app.post("/login", (req, res) => {/// action for when user click login button
+  const obj = getUser(req.body.email, users);/// grabing the obj with email
+  if (validateEmail(req.body.email) === false) {/// see if email is in database
+    res.status(403).send('invalid email');/// if not send status code 403
+    return;
+  } else if (bcrypt.compareSync(req.body.password, obj.password) === false) {/// see if password matches
+    res.status(403).send('invalid password');/// if not send status code 403
+    return;
   }
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  res.redirect(longURL);
+  req.session.user_id = obj.id;/// making a sesstion
+  res.redirect('/urls');/// bring user to path urls
+});
+
+app.post("/register", (req, res) => {
+  /// cheack if email are already in database and is they are emty or not
+  if (validateEmail(req.body.email) === true) {
+    res.status(401).send('Email is taken');
+    return;
+  } else if (req.body.email === "" || req.body.password === "") {
+    res.status(401).send('Please provide a username and password');
+    return;
+  }
+  let hashPassword = bcrypt.hashSync(req.body.password, 10);/// incrypt password
+  let id = generateRandomString();/// make a random id for a new user
+  users[id] = {id: id, email: req.body.email, password: hashPassword};/// creating user and store it in database
+  req.session.user_id = id;/// making a session for user
+  res.redirect("/urls");/// bring user to path urls
+});
+
+app.post("/logout", (req, res) => {/// action for logout button
+  req.session = null;/// set sesstion to null
+  res.redirect('/login');/// bring user to path login
 });
 
 app.listen(PORT, () => {/// console.log in shell when server is up and going
