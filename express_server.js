@@ -5,7 +5,7 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
-const { getUser } = require("./helper")
+const { getUser } = require("./helpers")
 
 app.set("view engine", "ejs");
 app.use(cookieSession({

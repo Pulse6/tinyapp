@@ -1,3 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+  <title>TinyApp</title>
+</head>
+
 <header>
   <nav class="navbar navbar-expand-md navbar-dark bg-success">
     <a class="navbar-brand" href="/urls">TinyApp</a>
@@ -13,7 +24,7 @@
     <% if(user_id){ %>
     <form class="form-inline" action="/Logout" method="POST">
       <div class="form-group mb-2">
-        <p style=" margin: 1em"><%= user_id.email %></p>
+        <p style=" margin: 1em">Logged in as: <%= user_id.email %></p>
         <button type="submit" class="btn btn-primary">Logout</button>
       </div>
     </form>
