@@ -11,21 +11,13 @@ app.use(cookieSession({
   name: 'session',
   keys: ['123']
 }));
+
 ////// set port to 8080
 const PORT = 8080;
-/// helper functions
-const { 
-  getUser
-} = require("./helpers");
 
-const generateRandomString = function() {
-  let result = '';
-  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < 6; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return result;
-};
+/// helper functions
+const { getUser } = require("./helpers");
+const { generateRandomString } = require("./helpers");
 
 let urlsForUser = id => {/// using id to fliter the links that belongs to user and returning an object
   let userURLdatabase = {};
@@ -37,7 +29,7 @@ let urlsForUser = id => {/// using id to fliter the links that belongs to user a
   return userURLdatabase;
 };
 
-const validateEmail = (email) => {/// using email to see if it is in database
+const validateEmail = email => {/// using email to see if it is in database
   for (let i of Object.keys(users)) {
     if (users[i].email === email) {
       return true;
@@ -46,7 +38,7 @@ const validateEmail = (email) => {/// using email to see if it is in database
   return false;
 };
 
-const isShorturlInData = (shortURL) => {/// check if the shortURL is in database
+const isShorturlInData = shortURL => {/// check if the shortURL is in database
   for (let key in urlDatabase) {
     if (shortURL === key) {
       return true;
@@ -76,8 +68,12 @@ const users = {/// databse for users info
 
 ////////////
 
-app.get("/", (req, res) => {/// home page display home
-  res.send("Hello!");
+app.get("/", (req, res) => {/// see if user are login
+  if (req.session.user_id !== undefined) {
+    res.redirect("/urls");/// bring user to this path if login
+  } else {
+    res.redirect("/login");// bring user to this path if not login
+  }
 });
 
 app.get("/urls.json", (req, res) => {/// use JSON to see what's in urlDatabase
