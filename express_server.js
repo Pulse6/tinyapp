@@ -5,7 +5,6 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
-const { getUser } = require("./helpers")
 
 app.set("view engine", "ejs");
 app.use(cookieSession({
@@ -14,8 +13,11 @@ app.use(cookieSession({
 }));
 ////// set port to 8080
 const PORT = 8080;
+/// helper functions
+const { 
+  getUser
+} = require("./helpers");
 
-///// helper functions
 const generateRandomString = function() {
   let result = '';
   let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -44,6 +46,15 @@ const validateEmail = (email) => {/// using email to see if it is in database
   return false;
 };
 
+const isShorturlInData = (shortURL) => {/// check if the shortURL is in database
+  for (let key in urlDatabase) {
+    if (shortURL === key) {
+      return true;
+    }
+  }
+  return false;
+};
+
 ////// Database
 const urlDatabase = {/// database for links and the user's id who made the link
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "userRandomID" },
@@ -62,6 +73,7 @@ const users = {/// databse for users info
     password: "123"
   }
 };
+
 ////////////
 
 app.get("/", (req, res) => {/// home page display home
@@ -96,10 +108,17 @@ app.get("/urls/new", (req, res) => {/// path for displaying adding links
 });
 
 app.get("/urls/:shortURL", (req, res) => {///  path for displaying the new link the user just added
+  if (!urlDatabase[req.params.shortURL]) {
+    res.status(401).send(`link doesn't exist`);
+    return;
+  }
   /// if not users give them a 401 statuscode
-  if (req.session.user_id === undefined || req.session.user_id !== urlDatabase[req.params.shortURL].userID) {
-    res.sendStatus(res.statusCode = 401);
-    return
+  if (req.session.user_id === undefined) {
+    res.status(401).send('Please login');
+    return;
+  } else if (req.session.user_id !== urlDatabase[req.params.shortURL].userID) {
+    res.status(401).send('This link is not yours');
+    return;
   }
   /// using templateVars to pass in data for rendering in urls_show
   let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL , user_id: users[req.session.user_id]};
@@ -115,8 +134,11 @@ app.get("/register", (req, res) => {/// for this path render urls_register
 
 app.post("/register", (req, res) => {
   /// cheack if email are already in database and is they are emty or not
-  if (validateEmail(req.body.email) === true || req.body.email === "" || req.body.password === "") {
-    res.sendStatus(res.statusCode = 400);
+  if (validateEmail(req.body.email) === true) {
+    res.status(401).send('Email is taken');
+    return;
+  } else if (req.body.email === "" || req.body.password === "") {
+    res.status(401).send('Please provide a username and password');
     return;
   }
   let hashPassword = bcrypt.hashSync(req.body.password, 10);/// incrypt password
@@ -127,6 +149,10 @@ app.post("/register", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {/// user adding a new link
+  if (req.session.user_id === undefined) {
+    res.status(401).send('Please login');
+    return;
+  }
   let newCode = generateRandomString();/// random ID ket for link and user's id
   urlDatabase[newCode] = { longURL: req.body.longURL, userID: req.session.user_id };
   res.redirect(`/urls/${newCode}`);/// bring user to /urls with the new link they made
@@ -142,26 +168,26 @@ app.get("/login", (req, res) => {/// for path /login render urls_login
 app.post("/login", (req, res) => {/// action for when user click login button
   const obj = getUser(req.body.email, users);/// grabing the obj with email
   if (validateEmail(req.body.email) === false) {/// see if email is in database
-    res.sendStatus(res.statusCode = 403);/// if not send status code 403
-    return
+    res.status(403).send('invalid email');/// if not send status code 403
+    return;
   } else if (bcrypt.compareSync(req.body.password, obj.password) === false) {/// see if password matches
-    res.sendStatus(res.statusCode = 403);/// if not send status code 403
-    return
+    res.status(403).send('invalid password');/// if not send status code 403
+    return;
   }
   req.session.user_id = obj.id;/// making a sesstion
   res.redirect('/urls');/// bring user to path urls
 });
 
 app.post("/logout", (req, res) => {/// action for logout button
-  req.session = null;/// set sesstion to null 
+  req.session = null;/// set sesstion to null
   res.redirect('/login');/// bring user to path login
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {/// action for when user click the delete button on path urls
   /// check if user are aloud to delete when their id
   if (req.session.user_id !== urlDatabase[req.params.shortURL].userID) {
-    res.sendStatus(res.statusCode = 401);
-    return
+    res.status(401).send('please login');
+    return;
   }
   delete urlDatabase[req.params.shortURL];/// deleting the key in database
   res.redirect(`/urls`);/// bring user back to path urls
@@ -170,8 +196,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {/// action for when user click
 app.post("/urls/:id/update", (req, res) => {/// action for when user click the submit botton at path urls:shorurl
   /// check if the link belongs to user
   if (req.session.user_id !== urlDatabase[req.params.id].userID) {
-    res.sendStatus(res.statusCode = 401);
-    return
+    res.status(401).send('please login');
+    return;
   }
   let id = req.params.id;
   urlDatabase[req.params.id].longURL = req.body.update;/// replacing old link with new link
@@ -179,6 +205,9 @@ app.post("/urls/:id/update", (req, res) => {/// action for when user click the s
 });
 
 app.get("/u/:shortURL", (req, res) => {/// with the right key in urldatabse will bring user to the longURL storge in that key
+  if (isShorturlInData(req.param.shortURL) === false) {
+    res.status(401).send(`This link doesn't exist`);
+  }
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
